@@ -16,7 +16,7 @@ There are optional parameters that can be set accordingly to needs of the user.
 __author__ = "Joanna Koszyk"
 __contact__ = "jkoszyk@agh.edu.pl"
 __copyright__ = "Copyright 2023, AGH"
-__date__ = "2023/06/23"
+__date__ = "2024/03/03"
 __email__ = "jkoszyk@agh.edu.pl"
 __version__ = "1.0.0"
 
@@ -28,13 +28,19 @@ import math
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import ticker
-# import time
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 matplotlib.rc('font', size=12)
 matplotlib.rc('axes', titlesize=16)
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
+
+viridis = cm.get_cmap('brg', 256)
+newcolors = viridis(np.linspace(0, 1, 256))
+white = np.array([255/256, 255/256, 255/256, 1])
+newcolors[:4, :] = white
+newcmp = ListedColormap(newcolors)
 
 
 @jit(nopython=True)
@@ -143,11 +149,8 @@ def hough_trans3d(pcld_xyz, max_rho1, min_rho1, theta_step1=0.01 * math.pi, fi_s
             for k, fi1 in enumerate(fi_array1):
                 rho2 = x * math.cos(theta1) * math.sin(fi1) + y * math.sin(fi1) * math.sin(theta1) + z * math.cos(fi1)
                 for l1, rho1 in enumerate(rho_array1):
-
-                    # print(theta1,",", fi1, ",", rho1, ",", rho2)
                     if abs(rho1 - rho2) < threshold:
                         # x1, y1, z1 = calculate_xyz_values(theta1, fi1, rho1)
-
                         acc[j, k, l1] += 1
 
     ind1 = np.argmax(acc)
@@ -197,11 +200,7 @@ def hough_trans3d_2(pcld_xyz, max_rho1, min_rho1, rho_step1, theta_array1, fi_ar
             for k, fi1 in enumerate(fi_array1):
                 rho2 = x * math.cos(theta1) * math.sin(fi1) + y * math.sin(fi1) * math.sin(theta1) + z * math.cos(fi1)
                 for l1, rho1 in enumerate(rho_array1):
-
-                    # print(theta1,",", fi1, ",", rho1, ",", rho2)
                     if abs(rho1 - rho2) < threshold:
-                        # x1, y1, z1 = calculate_xyz_values(theta1, fi1, rho1)
-
                         acc[j, k, l1] += 1
 
     ind1 = np.argmax(acc)
@@ -251,11 +250,7 @@ def hough_trans3d_3(pcld_xyz, theta_array1, fi_array1, rho_array1, threshold=0.0
             for k, fi1 in enumerate(fi_array1):
                 rho2 = x * math.cos(theta1) * math.sin(fi1) + y * math.sin(fi1) * math.sin(theta1) + z * math.cos(fi1)
                 for l1, rho1 in enumerate(rho_array1):
-
-                    # print(theta1,",", fi1, ",", rho1, ",", rho2)
                     if abs(rho1 - rho2) < threshold:
-                        # x1, y1, z1 = calculate_xyz_values(theta1, fi1, rho1)
-
                         acc[j, k, l1] += 1
 
     ind1 = np.argmax(acc)
@@ -334,10 +329,6 @@ def rotate_point_cloud(rotation_angle1, x1, y1, z1):
         xyz = xyz.transpose()
         new_xyz = rotation_matrix1 @ xyz
         new_xyz_matrix[:, i] = new_xyz
-        # if i == 1:
-        #     print("xyz:", xyz)
-        #     print("rot:", rotation_matrix)
-        #     print("new_xyz: ", new_xyz)
 
     rotated_pcld0 = new_xyz_matrix.transpose()
 
@@ -357,11 +348,11 @@ def rotate_point_cloud2(rotation_angle1, pcld):
     return rotated_pcld0
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def rotate_point_cloud3(rotation_matrix0, pcld0):
 
     # rotation of a point cloud around Z axis with theta_angle from Hough Transform
-    # version 3 - is accelerated with numba.jit
+    # version 3
 
     matrix_shape = pcld0.shape
     new_xyz_matrix = np.empty(matrix_shape)
@@ -373,10 +364,6 @@ def rotate_point_cloud3(rotation_matrix0, pcld0):
         new_xyz_matrix[i, :] = new_xyz
 
     return new_xyz_matrix
-
-
-def translate_point_cloud(pcld,  rho1):
-    pass
 
 
 # @jit(nopython=True)
@@ -416,27 +403,10 @@ def show_accumulator_2d(theta_array1, rho_array1, a, name=None):
     fig1 = plt.figure()
     ax1 = fig1.add_subplot()
     x1, y1 = np.meshgrid(theta_array1, rho_array1, indexing='xy')
-    cs = ax1.contourf(x1, y1, a, 50, cmap='Blues')
+    cs = ax1.contourf(x1, y1, a, 50, cmap=newcmp, alpha=1)
     ax1.set_xlabel('theta (rad)')
     ax1.set_ylabel('rho (m)')
     cbar = plt.colorbar(cs)
-    # print(np.max(a))
-    if name is not None:
-        name = name[:-4]
-        print(name)
-        plt.savefig(f'{name}.eps', format='eps')
-        # # save data x, y, a
-        # print(x1.shape)
-        # print(y1.shape)
-        # print(a.ravel().shape)
-        # print(theta_array1.shape)
-        # print(rho_array1.shape)
-        # arr = np.vstack((x1.ravel(), a.ravel()))
-        # print(arr.shape)
-        # arr = arr.reshape((-1, 2))
-        #
-        # df = pd.DataFrame(arr)
-        # df.to_csv(f"{name}_accumulator.csv")
     plt.show()
 
 
@@ -445,15 +415,10 @@ def show_accumulator_3d(theta_array1, fi_array1, rho_array1, a, name=None):
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111, projection='3d')
     x1, y1, z1 = np.meshgrid(theta_array1, fi_array1, rho_array1)
-    # cs = ax1.contourf(x1, y1, z1, a, 50, cmap='viridis')  # cmap = 'plasma'
-    ax1.scatter(x1.ravel(), y1.ravel(), z1.ravel(), c=a.ravel(), s=1, cmap='viridis')
+    ax1.scatter(x1.ravel(), y1.ravel(), z1.ravel(), c=a.ravel(), s=1, cmap=newcmp)
     ax1.set_xlabel('theta (rad)')
     ax1.set_ylabel('fi (rad)')
     ax1.set_zlabel('rho (m)')
-    # cbar = plt.colorbar(cs)
-    if name is not None:
-        plt.savefig(f'{name}.eps', format='eps')
-        # save data x, y, z, a
     plt.show()
 
 
@@ -583,10 +548,6 @@ def run_hough_transform(path1, output_dir, theta_array, for_3d, cut_cloud, visua
         else:
             path2 = output_dir
 
-        # print(path2)
-        # rotated_pcld = rotate_point_cloud(-theta_max, x0, y0, z0)
-        # rotated_pcld = rotate_point_cloud2(-theta_max, pcld_coordinates)
-        # start2 = time.time()
         rotation_angle = -theta_max
         print(rotation_angle)
         if for_3d:
@@ -598,20 +559,12 @@ def run_hough_transform(path1, output_dir, theta_array, for_3d, cut_cloud, visua
                                         [math.sin(rotation_angle), math.cos(rotation_angle)]])
 
         rotated_pcld = rotate_point_cloud3(rotation_matrix, pcld_coordinates)
-        point_cloud_4 = translate_point_cloud(rotated_pcld, rho_max)
+
         # end3 = time.time()
         # print(f"rotation time: {abs(start2-end3)}")
         # save point cloud (x, y, z) to csv file
-        df2 = pd.DataFrame(point_cloud_4)
+        df2 = pd.DataFrame(rotated_pcld)
         df2.to_csv(path2, header=False, index=False)
-
-        # # save files in another directory
-        # dir3_name = "korytarz_pojedyncze_rotated_2"
-        # # change name of the file
-        # csv_file3 = csv_file[:-4] + "_rotated.csv"
-        # path3 = os.path.join(dir3_name, csv_file3)
-        # df3 = pd.DataFrame(rotated_pcld_2)
-        # df3.to_csv(path3)
 
         print(path2)
 
@@ -640,10 +593,6 @@ def run_hough_transform_folder(input_dir, output_dir, for_3d, cut_cloud, visuali
         fi_array = np.arange(0, math.pi * 2, fi_step)
         if (fi_start is not None and fi_stop is not None) and (fi_start < fi_stop):
             fi_array = np.arange(fi_start, fi_stop, fi_step)
-
-    # if **kwargs
-    # check for theta_start, theta_stop - keys - if existent -> check if it makes sense
-    #
 
     if (rho_start is not None and rho_stop is not None) and (rho_start < rho_stop):
         rho_array = np.arange(rho_start, rho_stop, rho_step)
@@ -699,10 +648,6 @@ def run_hough_transform_single_cloud(path, output_dir, for_3d, cut_cloud, visual
         fi_array = np.arange(-math.pi, math.pi, fi_step)
         if (fi_start is not None and fi_stop is not None) and (fi_start < fi_stop):
             fi_array = np.arange(fi_start, fi_stop, fi_step)
-
-    # if **kwargs
-    # check for theta_start, theta_stop - keys - if existent -> check if it makes sense
-    #
 
     if (rho_start is not None and rho_stop is not None) and (rho_start < rho_stop):
         rho_array = np.arange(rho_start, rho_stop, rho_step)
@@ -925,24 +870,4 @@ if __name__ == "__main__":
 
     run_hough_transform_examples_2d()
     run_hough_transform_examples_3d()
-    # hough_transform("cube.csv", output_dir="altered_cube3d.csv", for_3d=True, cut_cloud=False,
-    #                 visualize_point_cloud=True, visualize_accumulator=True, theta_step=0.01*math.pi,
-    #                 fi_step=0.01 * math.pi, rho_step=0.1, threshold=0.05, rho_start=-15.0, rho_stop=15.0,
-    #                 theta_start=-math.pi/2, theta_stop=math.pi/2, fi_start=-math.pi/2, fi_stop=math.pi/2)
-
-    # hough_transform("rectangle3d.csv", output_dir="altered_rectangle3d.csv", for_3d=True, cut_cloud=False,
-    #                 visualize_point_cloud=True, visualize_accumulator=True, theta_step=0.01*math.pi,
-    #                 fi_step=0.01 * math.pi, rho_step=0.1, threshold=0.05, rho_start=-15.0, rho_stop=15.0,
-    #                 theta_start=-math.pi/2, theta_stop=math.pi/2, fi_start=-math.pi/2, fi_stop=math.pi/2)
-    #
-    # hough_transform("pyramid3d.csv", output_dir="altered_pyramid3d.csv", for_3d=True, cut_cloud=False, visualize_point_cloud=True,
-    #                 visualize_accumulator=True, theta_step=0.01*math.pi,
-    #                 fi_step=0.01 * math.pi, rho_step=0.1, threshold=0.05, rho_start=-15.0, rho_stop=15.0,
-    #                 theta_start=-math.pi/2, theta_stop=math.pi/2, fi_start=-math.pi/2, fi_stop=math.pi/2)
-    #
-    # hough_transform("corridor.csv", output_dir="altered_corridor3d.csv", for_3d=True, cut_cloud=False,
-    #                 visualize_point_cloud=True, visualize_accumulator=True, theta_step=0.01*math.pi,
-    #                 fi_step=0.01 * math.pi, rho_step=0.1, threshold=0.05, rho_start=-15.0, rho_stop=15.0,
-    #                 theta_start=-math.pi/2, theta_stop=math.pi/2, fi_start=-math.pi/2, fi_stop=math.pi/2)
-
     run_hough_transform_real_data_examples()
