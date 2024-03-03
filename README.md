@@ -13,7 +13,7 @@ The repository contains Hough Transform in 3D and 2D for point clouds. The code 
 
 ## Requirements
 
-* Python 3.8
+* Python 
   
 Libraries:
 * matplotlib
